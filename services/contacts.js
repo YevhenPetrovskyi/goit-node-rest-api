@@ -1,15 +1,28 @@
-import { Contact } from '../models/contact';
+import { Contact } from '../models/contact.js';
 
-export const getAllContacts = async (owner, page, limit, favorite) => {
+export const getAllContactsPagination = async (
+  owner,
+  page,
+  limit,
+  favorite
+) => {
   const skip = (page - 1) * limit;
   const filter = { owner };
-  console.log(filter);
-  if (favorite === true) {
-    filter.favorite = true;
+
+  const total = await Contact.countDocuments(filter);
+  const pages = Math.ceil(total / limit);
+  const resultTotal = { total, pages };
+
+  if (favorite !== undefined) {
+    filter.favorite = favorite;
   }
   const result = await Contact.find(filter, '-createdAt -updatedAt', {
     skip,
-    limit: Number(limit),
+    limit: limit,
   }).populate('owner', 'email subscription');
-  return result;
+
+  return {
+    data: result,
+    ...resultTotal,
+  };
 };

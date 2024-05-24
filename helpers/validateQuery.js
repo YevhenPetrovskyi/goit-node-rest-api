@@ -9,6 +9,7 @@ const validateQuery = (schema) => {
     }
 
     req.query = value;
+
     next();
   };
 

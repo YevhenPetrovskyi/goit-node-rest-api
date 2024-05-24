@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
-import HttpError from './HttpError.js';
+import HttpError from '../helpers/HttpError.js';
 import { User } from '../models/user.js';
 
-function auth(req, res, next) {
+export default function auth(req, _, next) {
   const authorizationHeader = req.headers.authorization;
 
   if (typeof authorizationHeader !== 'string') {
@@ -31,7 +31,7 @@ function auth(req, res, next) {
         next(HttpError(401, 'Invalid token'));
       }
 
-      req.user = user;
+      req.user = { id: decoded.id, subscription: user.subscription };
 
       next();
     } catch {
@@ -39,5 +39,3 @@ function auth(req, res, next) {
     }
   });
 }
-
-export default auth;
