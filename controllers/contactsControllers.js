@@ -14,7 +14,7 @@ export const getOneContact = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const result = await Contact.findById(id);
+    const result = await Contact.findOne({ _id: id, owner: req.user.id });
 
     if (result === null) {
       throw HttpError(404);
@@ -30,7 +30,7 @@ export const deleteContact = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const result = await Contact.findByIdAndDelete(id);
+    const result = await Contact.findByIdAndDelete({ _id: id });
 
     if (result === null) {
       throw HttpError(404);

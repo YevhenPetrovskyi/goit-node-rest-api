@@ -13,14 +13,16 @@ import {
   createContactSchema,
   updateContactSchema,
   updateFavoriteSchema,
+  paginationSchema,
 } from '../schemas/contactsSchemas.js';
 
 import validateBody from '../helpers/validateBody.js';
 import validateObjectId from '../helpers/validateObjectId.js';
+import validateQuery from '../helpers/validateQuery.js';
 
 const contactsRouter = express.Router();
 
-contactsRouter.get('/', getAllContacts);
+contactsRouter.get('/', validateQuery(paginationSchema), getAllContacts);
 
 contactsRouter.get('/:id', validateObjectId, getOneContact);
 
