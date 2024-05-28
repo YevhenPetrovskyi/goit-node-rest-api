@@ -11,7 +11,6 @@ export const getAllContactsPagination = async (
 
   const total = await Contact.countDocuments(filter);
   const pages = Math.ceil(total / limit);
-  const resultTotal = { total, pages };
 
   if (favorite !== undefined) {
     filter.favorite = favorite;
@@ -23,6 +22,7 @@ export const getAllContactsPagination = async (
 
   return {
     data: result,
-    ...resultTotal,
+    pages,
+    total,
   };
 };
