@@ -5,7 +5,9 @@ import {
   updateUserSubscriptionSchema,
   loginUserSchema,
 } from '../schemas/userSchemas.js';
+
 import auth from '../middlewares/auth.js';
+import upload from '../middlewares/upload.js';
 
 import {
   register,
@@ -13,7 +15,8 @@ import {
   logout,
   login,
   updateSubscription,
-} from '../controllers/usersControllers.js';
+} from '../controllers/authControllers.js';
+import { changeAvatar } from '../controllers/usersControllers.js';
 
 const usersRouter = express.Router();
 
@@ -31,5 +34,7 @@ usersRouter.patch(
   auth,
   updateSubscription
 );
+
+usersRouter.patch('/avatars', auth, upload.single('avatar'), changeAvatar);
 
 export default usersRouter;

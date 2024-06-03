@@ -1,124 +1,35 @@
-import jwt from 'jsonwebtoken';
-import { User } from '../models/user.js';
+import * as fs from 'node:fs/promises';
+import path from 'node:path';
+import Jimp from 'jimp';
+
 import HttpError from '../helpers/HttpError.js';
+import { User } from '../models/user.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-export const register = async (req, res, next) => {
-  const { email, password } = req.body;
-
+export const changeAvatar = async (req, res, next) => {
   try {
-    const user = await User.findOne({ email });
-
-    if (user) {
-      throw HttpError(409, 'Email in use');
+    if (!req.file) {
+      throw HttpError(400, 'File not found');
     }
 
-    const newUser = new User({ email, password });
-    await newUser.setPassword(password);
-    await newUser.save();
+    const { path: tempUploadPath, filename } = req.file;
 
-    res.status(201).json({
-      user: {
-        email: newUser.email,
-        subscription: newUser.subscription,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+    const newPath = path.resolve('public', 'avatars', filename);
 
-export const login = async (req, res, next) => {
-  const { email, password } = req.body;
+    const image = await Jimp.read(tempUploadPath);
 
-  try {
-    const user = await User.findOne({ email });
+    await image.resize(250, 250).writeAsync(tempUploadPath);
 
-    if (!user) {
-      throw HttpError(401, 'Email or password is wrong');
-    }
+    fs.rename(tempUploadPath, newPath);
 
-    const isPasswordEqual = await user.comparePassword(password);
+    const avatarURL = `/avatars/${filename}`;
 
-    if (!isPasswordEqual) {
-      throw HttpError(401, 'Email or password is wrong');
-    }
-
-    const payload = {
-      id: user._id,
-      email: user.email,
-    };
-
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-
-    await User.findByIdAndUpdate(user._id, { token });
-
-    res.json({
-      token,
-      user: {
-        email: user.email,
-        subscription: user.subscription,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const logout = async (req, res, next) => {
-  const { id } = req.user;
-
-  try {
-    await User.findByIdAndUpdate(id, { token: null }, { new: true });
-
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const current = async (req, res, next) => {
-  const { id } = req.user;
-
-  try {
-    const user = await User.findById(id);
-
-    res.json({
-      email: user.email,
-      subscription: user.subscription,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateSubscription = async (req, res, next) => {
-  try {
-    console.log(req.body);
-    if (
-      Object.keys(req.body).length !== 1 ||
-      Object.keys(req.body)[0] !== 'subscription'
-    ) {
-      throw HttpError(400, 'Body must have only subscription field');
-    }
-
-    const { subscription } = req.body;
-
-    const result = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       req.user.id,
-      { subscription },
+      { avatarURL },
       { new: true }
     );
 
-    if (result === null) {
-      throw HttpError(404);
-    }
-
-    res.json({
-      id: result._id,
-      subscription: result.subscription,
-    });
+    res.json({ id: user._id, avatarURL: user.avatarURL });
   } catch (error) {
     next(error);
   }
