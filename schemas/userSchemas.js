@@ -21,3 +21,7 @@ export const loginUserSchema = Joi.object({
     )
     .required(),
 });
+
+export const validateVerifyEmail = Joi.object({
+  email: Joi.string().email({ minDomainSegments: 2 }).required(),
+});
