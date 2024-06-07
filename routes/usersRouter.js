@@ -4,6 +4,7 @@ import {
   createUserSchema,
   updateUserSubscriptionSchema,
   loginUserSchema,
+  validateVerifyEmail,
 } from '../schemas/userSchemas.js';
 
 import auth from '../middlewares/auth.js';
@@ -16,7 +17,11 @@ import {
   login,
   updateSubscription,
 } from '../controllers/authControllers.js';
-import { changeAvatar } from '../controllers/usersControllers.js';
+import {
+  changeAvatar,
+  verifyEmail,
+  resendVerifyEmail,
+} from '../controllers/usersControllers.js';
 
 const usersRouter = express.Router();
 
@@ -36,5 +41,13 @@ usersRouter.patch(
 );
 
 usersRouter.patch('/avatars', auth, upload.single('avatar'), changeAvatar);
+
+usersRouter.get('/verify/:verificationToken', verifyEmail);
+
+usersRouter.post(
+  '/verify',
+  validateBody(validateVerifyEmail),
+  resendVerifyEmail
+);
 
 export default usersRouter;
