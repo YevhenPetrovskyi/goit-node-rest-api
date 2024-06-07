@@ -1,12 +1,15 @@
 import jwt from 'jsonwebtoken';
 import gravatar from 'gravatar';
+import { nanoid } from 'nanoid';
 import { User } from '../models/user.js';
 import HttpError from '../helpers/HttpError.js';
+import sendMail from '../helpers/sendMail.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const { JWT_SECRET, BASE_URI } = process.env;
 
 export const register = async (req, res, next) => {
   const { email, password } = req.body;
+  const verificationToken = nanoid();
 
   try {
     const user = await User.findOne({ email });
@@ -17,9 +20,29 @@ export const register = async (req, res, next) => {
 
     const avatarURL = gravatar.url(email);
 
-    const newUser = new User({ email, password, avatarURL });
+    const newUser = new User({ email, avatarURL, verificationToken });
     await newUser.setPassword(password);
     await newUser.save();
+
+    const mail = {
+      to: email,
+      subject: 'Verify email',
+      html: `<p>To confirm your email address click the following link:</p><a target="_blank" href="${BASE_URI}/api/users/verify/${newUser.verificationToken}">Click verify email</a>`,
+      text: `To confirm your email address click the following link: ${BASE_URI}/api/users/verify/${newUser.verificationToken}`,
+    };
+
+    await sendMail(mail);
+
+    if (!mail) {
+      res.status(500).json({
+        message: 'User created, but verification email not sent',
+        user: {
+          email: newUser.email,
+          subscription: newUser.subscription,
+          avatarURL: newUser.avatarURL,
+        },
+      });
+    }
 
     res.status(201).json({
       user: {
@@ -47,6 +70,10 @@ export const login = async (req, res, next) => {
 
     if (!isPasswordEqual) {
       throw HttpError(401, 'Email or password is wrong');
+    }
+
+    if (!user.verify) {
+      throw HttpError(401, 'Email not verified');
     }
 
     const payload = {
